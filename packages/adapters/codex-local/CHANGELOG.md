@@ -1,5 +1,11 @@
 # @paperclipai/adapter-codex-local
 
+## Unreleased
+
+### Patch Changes
+
+- Expose GPT-5.5 in the Codex local adapter fallback model list for installations that rely on native Codex authentication instead of server-side OpenAI model discovery.
+
 ## 0.3.1
 
 ### Patch Changes

@@ -23,6 +23,12 @@ The `codex_local` adapter runs OpenAI's Codex CLI locally. It supports session p
 | `fastMode` | boolean | No | Enables Codex Fast mode. Currently supported on `gpt-5.4` only and burns credits faster |
 | `dangerouslyBypassApprovalsAndSandbox` | boolean | No | Skip safety checks (dev only) |
 
+## Model Picker Fallbacks
+
+Paperclip shows the model dropdown from the adapter model endpoint. When an OpenAI API key is configured for the server, that endpoint merges live `/v1/models` results with the adapter fallback list. When no server-side OpenAI API key is available, the dropdown uses the fallback list only.
+
+The fallback list includes `gpt-5.5` and `gpt-5.4` so operators can select current Codex models even when the runtime uses native Codex authentication instead of a server-side `OPENAI_API_KEY`. Fast mode remains limited to `gpt-5.4`; do not enable `fastMode` for `gpt-5.5` unless Codex adds support for that combination.
+
 ## Session Persistence
 
 Codex uses `previous_response_id` for session continuity. The adapter serializes and restores this across heartbeats, allowing the agent to maintain conversation context.
