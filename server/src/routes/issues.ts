@@ -29,6 +29,7 @@ import {
   updateIssueSchema,
   getClosedIsolatedExecutionWorkspaceMessage,
   isClosedIsolatedExecutionWorkspace,
+  isUuidLike,
   type ExecutionWorkspace,
 } from "@paperclipai/shared";
 import { trackAgentTaskCompleted } from "@paperclipai/shared/telemetry";
@@ -184,7 +185,7 @@ function shouldImplicitlyMoveCommentedIssueToTodoForAgent(input: {
   actorType: "agent" | "user";
   actorId: string;
 }) {
-  if (!isClosedIssueStatus(input.issueStatus) && input.issueStatus !== "blocked") return false;
+  if (input.issueStatus !== "blocked") return false;
   if (typeof input.assigneeAgentId !== "string" || input.assigneeAgentId.length === 0) return false;
   if (input.actorType === "agent" && input.actorId === input.assigneeAgentId) return false;
   return true;
@@ -513,8 +514,21 @@ export function issueRoutes(
   function requireAgentRunId(req: Request, res: Response) {
     if (req.actor.type !== "agent") return null;
     const runId = req.actor.runId?.trim();
-    if (runId) return runId;
+    if (runId && isUuidLike(runId)) return runId;
+    if (runId) {
+      res.status(422).json({ error: "Agent run id must be a UUID" });
+      return null;
+    }
     res.status(401).json({ error: "Agent run id required" });
+    return null;
+  }
+
+  function optionalAgentRunId(req: Request, res: Response) {
+    if (req.actor.type !== "agent") return null;
+    const runId = req.actor.runId?.trim();
+    if (!runId) return null;
+    if (isUuidLike(runId)) return runId;
+    res.status(422).json({ error: "Agent run id must be a UUID" });
     return null;
   }
 
@@ -578,8 +592,8 @@ export function issueRoutes(
       });
       return false;
     }
-    const runId = requireAgentRunId(req, res);
-    if (!runId) return false;
+    const runId = optionalAgentRunId(req, res);
+    if (res.headersSent) return false;
     const ownership = await svc.assertCheckoutOwner(issue.id, actorAgentId, runId);
     if (ownership.adoptedFromRunId) {
       const actor = getActorInfo(req);
@@ -2496,8 +2510,8 @@ export function issueRoutes(
       return;
     }
 
-    const checkoutRunId = requireAgentRunId(req, res);
-    if (req.actor.type === "agent" && !checkoutRunId) return;
+    const checkoutRunId = optionalAgentRunId(req, res);
+    if (res.headersSent) return;
     const updated = await svc.checkout(id, req.body.agentId, req.body.expectedStatuses, checkoutRunId);
     const actor = getActorInfo(req);
 
@@ -2546,8 +2560,8 @@ export function issueRoutes(
     }
     assertCompanyAccess(req, existing.companyId);
     if (!(await assertAgentIssueMutationAllowed(req, res, existing))) return;
-    const actorRunId = requireAgentRunId(req, res);
-    if (req.actor.type === "agent" && !actorRunId) return;
+    const actorRunId = optionalAgentRunId(req, res);
+    if (res.headersSent) return;
 
     const released = await svc.release(
       id,
