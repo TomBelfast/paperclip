@@ -13,7 +13,9 @@ The server reads its configuration from environment variables:
 - `PAPERCLIP_API_KEY` - bearer token used for `/api` requests
 - `PAPERCLIP_COMPANY_ID` - optional default company for company-scoped tools
 - `PAPERCLIP_AGENT_ID` - optional default agent for checkout helpers
-- `PAPERCLIP_RUN_ID` - optional run id forwarded on mutating requests
+- `PAPERCLIP_RUN_ID` - optional heartbeat run id forwarded on mutating requests.
+  If omitted, MCP sends no run id and Paperclip treats writes as manual agent
+  actions.
 
 ## Usage
 

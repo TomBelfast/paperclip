@@ -1819,6 +1819,10 @@ export function buildPaperclipTaskMarkdown(input: {
   return lines.join("\n");
 }
 
+function isIssueTerminalStatus(status: string | null | undefined): status is "done" | "cancelled" {
+  return status === "done" || status === "cancelled";
+}
+
 // A positive liveness check means some process currently owns the PID.
 // On Linux, PIDs can be recycled, so this is a best-effort signal rather
 // than proof that the original child is still alive.
@@ -6048,6 +6052,18 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
             deferred.requestedByActorType === "user" ||
             deferredWakeReason === "issue_reopened_via_comment"
           );
+        if (isIssueTerminalStatus(issue.status) && !shouldReopenDeferredCommentWake) {
+          await tx
+            .update(agentWakeupRequests)
+            .set({
+              status: "skipped",
+              finishedAt: new Date(),
+              error: `Deferred wake skipped because issue is ${issue.status}`,
+              updatedAt: new Date(),
+            })
+            .where(eq(agentWakeupRequests.id, deferred.id));
+          continue;
+        }
         let reopenedActivity: LogActivityInput | null = null;
 
         if (shouldReopenDeferredCommentWake) {
@@ -6297,10 +6313,6 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
 
     const promotedRun = promotionResult?.run ?? null;
     if (!promotedRun) return;
-
-    if (promotionResult?.kind === "promoted" && promotionResult.reopenedActivity) {
-      await logActivity(db, promotionResult.reopenedActivity);
-    }
 
     publishLiveEvent({
       companyId: promotedRun.companyId,
@@ -7202,6 +7214,10 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
         });
       }
       await releaseIssueExecutionAndPromote(run);
+    }
+
+    if (runs.length > 0) {
+      await finalizeAgentStatus(agentId, "cancelled");
     }
 
     return runs.length;

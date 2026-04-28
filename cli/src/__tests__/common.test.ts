@@ -18,6 +18,7 @@ describe("resolveCommandContext", () => {
     delete process.env.PAPERCLIP_API_URL;
     delete process.env.PAPERCLIP_API_KEY;
     delete process.env.PAPERCLIP_COMPANY_ID;
+    delete process.env.PAPERCLIP_RUN_ID;
   });
 
   afterEach(() => {
@@ -94,5 +95,16 @@ describe("resolveCommandContext", () => {
     expect(() =>
       resolveCommandContext({ context: contextPath, apiBase: "http://localhost:3100" }, { requireCompany: true }),
     ).toThrow(/Company ID is required/);
+  });
+
+  it("forwards PAPERCLIP_RUN_ID into the API client", () => {
+    process.env.PAPERCLIP_API_URL = "http://localhost:3100";
+    process.env.PAPERCLIP_API_KEY = "agent-token";
+    process.env.PAPERCLIP_COMPANY_ID = "company-env";
+    process.env.PAPERCLIP_RUN_ID = "run-env";
+
+    const resolved = resolveCommandContext({}, { requireCompany: true });
+
+    expect(resolved.api.runId).toBe("run-env");
   });
 });

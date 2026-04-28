@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { PaperclipApiClient } from "./client.js";
+import { readConfigFromEnv } from "./config.js";
 import { createToolDefinitions } from "./tools.js";
 
 function makeClient() {
@@ -50,6 +51,17 @@ describe("paperclip MCP tools", () => {
     expect((init.headers as Record<string, string>)["X-Paperclip-Run-Id"]).toBe(
       "33333333-3333-3333-3333-333333333333",
     );
+  });
+
+  it("omits the run id when PAPERCLIP_RUN_ID is not set", () => {
+    const config = readConfigFromEnv({
+      PAPERCLIP_API_URL: "http://localhost:3100",
+      PAPERCLIP_API_KEY: "token-123",
+      PAPERCLIP_COMPANY_ID: "11111111-1111-1111-1111-111111111111",
+      PAPERCLIP_AGENT_ID: "22222222-2222-2222-2222-222222222222",
+    } as NodeJS.ProcessEnv);
+
+    expect(config.runId).toBeNull();
   });
 
   it("uses default company id for company-scoped list tools", async () => {
