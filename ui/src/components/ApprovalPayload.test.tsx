@@ -42,6 +42,13 @@ describe("ApprovalPayloadRenderer", () => {
             summary: "Board asked for approval before posting the frog.",
             recommendedAction: "Approve the frog reply.",
             nextActionOnApproval: "Post the frog comment on the issue.",
+            topics: [
+              {
+                rank: 1,
+                source_title: "ChatGPT Images Just Got Way Better",
+                business_angle: "Small business image assets.",
+              },
+            ],
             risks: ["The frog might be too powerful."],
             proposedComment: "(o)<",
           }}
@@ -53,6 +60,8 @@ describe("ApprovalPayloadRenderer", () => {
     expect(container.textContent).toContain("Board asked for approval before posting the frog.");
     expect(container.textContent).toContain("Approve the frog reply.");
     expect(container.textContent).toContain("Post the frog comment on the issue.");
+    expect(container.textContent).toContain("ChatGPT Images Just Got Way Better");
+    expect(container.textContent).toContain("Small business image assets.");
     expect(container.textContent).toContain("The frog might be too powerful.");
     expect(container.textContent).toContain("(o)<");
     expect(container.textContent).not.toContain("\"recommendedAction\"");

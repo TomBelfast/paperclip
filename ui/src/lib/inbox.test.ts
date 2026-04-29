@@ -295,6 +295,14 @@ const dashboard: DashboardSummary = {
     pausedAgents: 0,
     pausedProjects: 0,
   },
+  contentTopics: {
+    sourceBatches: 0,
+    selectionDocuments: 0,
+    pendingApprovals: 0,
+    latestSourceBatch: null,
+    latestSelection: null,
+    pendingSelection: null,
+  },
   runActivity: [],
 };
 

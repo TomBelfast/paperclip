@@ -173,6 +173,38 @@ function BoardApprovalPayloadContent({ payload }: { payload: Record<string, unkn
   const recommendedAction = firstNonEmptyString(payload.recommendedAction);
   const nextActionOnApproval = firstNonEmptyString(payload.nextActionOnApproval);
   const proposedComment = firstNonEmptyString(payload.proposedComment);
+  const topicItems = Array.isArray(payload.topics)
+    ? payload.topics
+        .map((value, index) => {
+          if (typeof value === "string") return { rank: index + 1, title: value, detail: null };
+          if (!value || typeof value !== "object") return null;
+          const item = value as Record<string, unknown>;
+          const topicTitle = firstNonEmptyString(
+            item.title,
+            item.topic,
+            item.name,
+            item.sourceTitle,
+            item.source_title,
+            item.videoTitle,
+            item.video_title,
+          );
+          if (!topicTitle) return null;
+          return {
+            rank: typeof item.rank === "number" ? item.rank : index + 1,
+            title: topicTitle,
+            detail: firstNonEmptyString(
+              item.summary,
+              item.businessAngle,
+              item.business_angle,
+              item.sourceTitle,
+              item.source_title,
+              item.source,
+            ),
+          };
+        })
+        .filter((value): value is { rank: number; title: string; detail: string | null } => value !== null)
+        .slice(0, 5)
+    : [];
 
   return (
     <div className="mt-4 space-y-3.5 text-sm">
@@ -200,6 +232,20 @@ function BoardApprovalPayloadContent({ payload }: { payload: Record<string, unkn
         <div className="rounded-lg border border-border/60 bg-background/60 px-3.5 py-3">
           <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">On approval</p>
           <p className="mt-1 leading-6 text-foreground">{nextActionOnApproval}</p>
+        </div>
+      )}
+      {topicItems.length > 0 && (
+        <div className="space-y-1.5">
+          <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">Topics</p>
+          <ol className="space-y-1.5">
+            {topicItems.map((topic) => (
+              <li key={`${topic.rank}-${topic.title}`} className="rounded-lg border border-border/60 bg-background/60 px-3.5 py-2.5">
+                <span className="font-mono text-xs text-muted-foreground">{topic.rank}.</span>{" "}
+                <span className="font-medium text-foreground">{topic.title}</span>
+                {topic.detail && <p className="mt-1 text-xs leading-5 text-muted-foreground">{topic.detail}</p>}
+              </li>
+            ))}
+          </ol>
         </div>
       )}
       {risks.length > 0 && (

@@ -20,11 +20,21 @@ import { ActivityRow } from "../components/ActivityRow";
 import { Identity } from "../components/Identity";
 import { timeAgo } from "../lib/timeAgo";
 import { cn, formatCents } from "../lib/utils";
-import { Bot, CircleDot, DollarSign, ShieldCheck, LayoutDashboard, PauseCircle } from "lucide-react";
+import {
+  Bot,
+  CheckCircle2,
+  CircleDot,
+  DollarSign,
+  LayoutDashboard,
+  MessageCircle,
+  Newspaper,
+  PauseCircle,
+  ShieldCheck,
+} from "lucide-react";
 import { ActiveAgentsPanel } from "../components/ActiveAgentsPanel";
 import { ChartCard, RunActivityChart, PriorityChart, IssueStatusChart, SuccessRateChart } from "../components/ActivityCharts";
 import { PageSkeleton } from "../components/PageSkeleton";
-import type { Agent, Issue } from "@paperclipai/shared";
+import type { Agent, DashboardContentTopicsSummary, Issue } from "@paperclipai/shared";
 import { PluginSlotOutlet } from "@/plugins/slots";
 
 const DASHBOARD_ACTIVITY_LIMIT = 10;
@@ -32,6 +42,105 @@ const DASHBOARD_ACTIVITY_LIMIT = 10;
 function getRecentIssues(issues: Issue[]): Issue[] {
   return [...issues]
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+}
+
+function issuePath(issueIdentifier: string | null, issueId: string) {
+  return `/issues/${issueIdentifier ?? issueId}`;
+}
+
+function ContentTopicsPanel({ topics }: { topics: DashboardContentTopicsSummary }) {
+  const pending = topics.pendingSelection;
+  const latestSource = topics.latestSourceBatch;
+  const latestSelection = topics.latestSelection;
+
+  return (
+    <section className="border border-border bg-card/70">
+      <div className="flex flex-col gap-4 p-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0 space-y-3">
+          <div className="flex items-center gap-2">
+            <Newspaper className="h-4 w-4 text-muted-foreground" />
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              Content Topics
+            </h3>
+          </div>
+          <div className="grid gap-2 text-sm sm:grid-cols-3">
+            <div className="border border-border/70 bg-background/60 px-3 py-2">
+              <p className="text-xs text-muted-foreground">SubRadar batches</p>
+              <p className="mt-1 text-lg font-semibold text-foreground">{topics.sourceBatches}</p>
+            </div>
+            <div className="border border-border/70 bg-background/60 px-3 py-2">
+              <p className="text-xs text-muted-foreground">Top 5 docs</p>
+              <p className="mt-1 text-lg font-semibold text-foreground">{topics.selectionDocuments}</p>
+            </div>
+            <div className="border border-border/70 bg-background/60 px-3 py-2">
+              <p className="text-xs text-muted-foreground">Pending approvals</p>
+              <p className="mt-1 text-lg font-semibold text-foreground">{topics.pendingApprovals}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="min-w-0 flex-1 lg:max-w-2xl">
+          {pending ? (
+            <div className="border border-amber-500/25 bg-amber-500/10 p-3">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-amber-700 dark:text-amber-300">
+                    <MessageCircle className="h-3.5 w-3.5" />
+                    WhatsApp approval pending
+                  </div>
+                  <p className="mt-1 truncate text-sm font-semibold text-foreground">{pending.title}</p>
+                  {pending.summary && (
+                    <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">{pending.summary}</p>
+                  )}
+                </div>
+                <Link to={`/approvals/${pending.id}`} className="text-xs font-medium text-amber-700 underline underline-offset-2 dark:text-amber-300">
+                  Open approval
+                </Link>
+              </div>
+              {pending.topics.length > 0 && (
+                <ol className="mt-3 grid gap-1.5 text-xs text-foreground sm:grid-cols-2">
+                  {pending.topics.map((topic) => (
+                    <li key={`${topic.rank ?? "x"}-${topic.title}`} className="min-w-0 rounded border border-border/50 bg-background/60 px-2.5 py-2">
+                      <span className="font-mono text-muted-foreground">{topic.rank ?? "?"}.</span>{" "}
+                      <span className="font-medium">{topic.title}</span>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </div>
+          ) : (
+            <div className="border border-border/70 bg-background/60 p-3 text-sm">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <CheckCircle2 className="h-4 w-4" />
+                <span>No topic approval is waiting.</span>
+              </div>
+            </div>
+          )}
+
+          <div className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
+            {latestSource && (
+              <Link
+                to={issuePath(latestSource.issueIdentifier, latestSource.issueId)}
+                className="block min-w-0 border border-border/70 bg-background/60 px-3 py-2 text-inherit no-underline hover:bg-accent/50"
+              >
+                <span className="block font-medium text-foreground">Latest source batch</span>
+                <span className="mt-1 block truncate">{latestSource.issueIdentifier ?? latestSource.issueId.slice(0, 8)} · {timeAgo(latestSource.updatedAt)}</span>
+              </Link>
+            )}
+            {latestSelection && (
+              <Link
+                to={issuePath(latestSelection.issueIdentifier, latestSelection.issueId)}
+                className="block min-w-0 border border-border/70 bg-background/60 px-3 py-2 text-inherit no-underline hover:bg-accent/50"
+              >
+                <span className="block font-medium text-foreground">Latest Top 5</span>
+                <span className="mt-1 block truncate">{latestSelection.issueIdentifier ?? latestSelection.issueId.slice(0, 8)} · {timeAgo(latestSelection.updatedAt)}</span>
+              </Link>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
 }
 
 export function Dashboard() {
@@ -290,6 +399,8 @@ export function Dashboard() {
               }
             />
           </div>
+
+          <ContentTopicsPanel topics={data.contentTopics} />
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <ChartCard title="Run Activity" subtitle="Last 14 days">
